@@ -1,6 +1,8 @@
 # Multi-stage Dockerfile for production builds
 
 FROM node:18-alpine AS base
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
 RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
