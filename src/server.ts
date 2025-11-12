@@ -10,29 +10,29 @@ async function startServer() {
   try {
     // Test database connection
     await prisma.$connect();
-    logger.info("✅ Database connected");
+    logger.info("Database connected");
 
     // Test Redis connection
     await redis.ping();
-    logger.info("✅ Redis connected");
+    logger.info("Redis connected");
 
     // Initialize background workers
     await initializeWorkers();
-    logger.info("✅ Background workers initialized");
+    logger.info("Background workers initialized");
 
     // Warm up NLP models
     await sentimentService.warmUpModels();
-    logger.info("✅ NLP models warmed up");
+    logger.info("NLP models warmed up");
 
     // Create and start server
     const { app, io } = createApp();
     const PORT = parseInt(env.PORT) || 4000;
 
     const server = app.listen(PORT, () => {
-      logger.info(`🚀 Server running on port ${PORT}`);
-      logger.info(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
-      logger.info(`🏥 Health Check: http://localhost:${PORT}/health`);
-      logger.info(`🌍 Environment: ${env.NODE_ENV}`);
+      logger.info(`Server running on port ${PORT}`);
+      logger.info(`API Documentation: http://localhost:${PORT}/api-docs`);
+      logger.info(`Health Check: http://localhost:${PORT}/health`);
+      logger.info(`Environment: ${env.NODE_ENV}`);
     });
 
     // Attach Socket.IO to HTTP server

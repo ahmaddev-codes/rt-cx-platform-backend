@@ -12,12 +12,8 @@ export const redis = new Redis(env.REDIS_URL, {
 // Export for BullMQ
 export const redisClient = redis;
 
-redis.on("connect", () => {
-  console.log("✅ Redis connected");
-});
-
 redis.on("error", (err) => {
-  console.error("❌ Redis error:", err);
+  console.error("Redis error:", err);
 });
 
 // Graceful shutdown
