@@ -11,11 +11,11 @@ function parseDateRange(query: any) {
   if (query.range) {
     const now = new Date();
     const ranges: Record<string, number> = {
-      '1h': 60 * 60 * 1000,
-      '24h': 24 * 60 * 60 * 1000,
-      '7d': 7 * 24 * 60 * 60 * 1000,
-      '30d': 30 * 24 * 60 * 60 * 1000,
-      '90d': 90 * 24 * 60 * 60 * 1000,
+      "1h": 60 * 60 * 1000,
+      "24h": 24 * 60 * 60 * 1000,
+      "7d": 7 * 24 * 60 * 60 * 1000,
+      "30d": 30 * 24 * 60 * 60 * 1000,
+      "90d": 90 * 24 * 60 * 60 * 1000,
     };
 
     const ms = ranges[query.range];
@@ -59,18 +59,20 @@ function parseDateRange(query: any) {
  *       200:
  *         description: Dashboard statistics retrieved successfully
  */
-export const getOverallStats = asyncHandler(async (req: Request, res: Response) => {
-  const dateRange = parseDateRange(req.query);
+export const getOverallStats = asyncHandler(
+  async (req: Request, res: Response) => {
+    const dateRange = parseDateRange(req.query);
 
-  const stats = await dashboardService.getOverallStats(dateRange);
+    const stats = await dashboardService.getOverallStats(dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: stats,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: stats,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -102,20 +104,26 @@ export const getOverallStats = asyncHandler(async (req: Request, res: Response) 
  *       200:
  *         description: Sentiment trends retrieved successfully
  */
-export const getSentimentTrends = asyncHandler(async (req: Request, res: Response) => {
-  const interval = (req.query.interval as 'hour' | 'day' | 'week') || 'day';
-  const dateRange = parseDateRange(req.query);
-  const channel = req.query.channel as FeedbackChannel | undefined;
+export const getSentimentTrends = asyncHandler(
+  async (req: Request, res: Response) => {
+    const interval = (req.query.interval as "hour" | "day" | "week") || "day";
+    const dateRange = parseDateRange(req.query);
+    const channel = req.query.channel as FeedbackChannel | undefined;
 
-  const trends = await dashboardService.getSentimentTrends(interval, dateRange, channel);
+    const trends = await dashboardService.getSentimentTrends(
+      interval,
+      dateRange,
+      channel
+    );
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: trends,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: trends,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -138,18 +146,20 @@ export const getSentimentTrends = asyncHandler(async (req: Request, res: Respons
  *       200:
  *         description: Channel performance retrieved successfully
  */
-export const getChannelPerformance = asyncHandler(async (req: Request, res: Response) => {
-  const dateRange = parseDateRange(req.query);
+export const getChannelPerformance = asyncHandler(
+  async (req: Request, res: Response) => {
+    const dateRange = parseDateRange(req.query);
 
-  const performance = await dashboardService.getChannelPerformance(dateRange);
+    const performance = await dashboardService.getChannelPerformance(dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: performance,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: performance,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -177,19 +187,21 @@ export const getChannelPerformance = asyncHandler(async (req: Request, res: Resp
  *       200:
  *         description: Trending topics retrieved successfully
  */
-export const getTrendingTopics = asyncHandler(async (req: Request, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 10;
-  const dateRange = parseDateRange(req.query);
+export const getTrendingTopics = asyncHandler(
+  async (req: Request, res: Response) => {
+    const limit = parseInt(req.query.limit as string) || 10;
+    const dateRange = parseDateRange(req.query);
 
-  const topics = await dashboardService.getTrendingTopics(limit, dateRange);
+    const topics = await dashboardService.getTrendingTopics(limit, dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: topics,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: topics,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -212,18 +224,20 @@ export const getTrendingTopics = asyncHandler(async (req: Request, res: Response
  *       200:
  *         description: Emotion breakdown retrieved successfully
  */
-export const getEmotionBreakdown = asyncHandler(async (req: Request, res: Response) => {
-  const dateRange = parseDateRange(req.query);
+export const getEmotionBreakdown = asyncHandler(
+  async (req: Request, res: Response) => {
+    const dateRange = parseDateRange(req.query);
 
-  const emotions = await dashboardService.getEmotionBreakdown(dateRange);
+    const emotions = await dashboardService.getEmotionBreakdown(dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: emotions,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: emotions,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -246,18 +260,21 @@ export const getEmotionBreakdown = asyncHandler(async (req: Request, res: Respon
  *       200:
  *         description: Customer segment analysis retrieved successfully
  */
-export const getCustomerSegments = asyncHandler(async (req: Request, res: Response) => {
-  const dateRange = parseDateRange(req.query);
+export const getCustomerSegments = asyncHandler(
+  async (req: Request, res: Response) => {
+    const dateRange = parseDateRange(req.query);
 
-  const segments = await dashboardService.getCustomerSegmentAnalysis(dateRange);
+    const segments =
+      await dashboardService.getCustomerSegmentAnalysis(dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: segments,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: segments,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);
 
 /**
  * @swagger
@@ -280,15 +297,17 @@ export const getCustomerSegments = asyncHandler(async (req: Request, res: Respon
  *       200:
  *         description: Journey stage analysis retrieved successfully
  */
-export const getJourneyStages = asyncHandler(async (req: Request, res: Response) => {
-  const dateRange = parseDateRange(req.query);
+export const getJourneyStages = asyncHandler(
+  async (req: Request, res: Response) => {
+    const dateRange = parseDateRange(req.query);
 
-  const stages = await dashboardService.getJourneyStageAnalysis(dateRange);
+    const stages = await dashboardService.getJourneyStageAnalysis(dateRange);
 
-  const response: ApiResponse = {
-    status: "ok",
-    data: stages,
-  };
+    const response: ApiResponse = {
+      status: "ok",
+      data: stages,
+    };
 
-  res.json(response);
-});
+    res.json(response);
+  }
+);

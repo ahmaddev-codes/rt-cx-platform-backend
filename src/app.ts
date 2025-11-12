@@ -16,7 +16,7 @@ import authRoutes from "./routes/auth.routes";
 import userRoutes from "./routes/user.routes";
 import feedbackRoutes from "./routes/feedback.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
-// import alertRoutes from './routes/alert.routes';
+import alertRoutes from "./routes/alert.routes";
 // import topicRoutes from './routes/topic.routes';
 
 export function createApp(): { app: Application; io: Server } {
@@ -84,7 +84,7 @@ export function createApp(): { app: Application; io: Server } {
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/feedback", feedbackRoutes);
   app.use("/api/v1/dashboard", dashboardRoutes);
-  // app.use('/api/v1/alerts', alertRoutes);
+  app.use("/api/v1/alerts", alertRoutes);
   // app.use('/api/v1/topics', topicRoutes);
 
   // Catch-all for undefined routes

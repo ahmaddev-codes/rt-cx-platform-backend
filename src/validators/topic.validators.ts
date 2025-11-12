@@ -15,8 +15,8 @@ export const updateTopicSchema = z.object({
 export const topicFilterSchema = z.object({
   category: z.string().optional(),
   search: z.string().optional(),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("20"),
 });
 
 export type CreateTopicDTO = z.infer<typeof createTopicSchema>;

@@ -102,34 +102,65 @@
 
 ### Next Steps for Full Implementation
 
-#### 2. Feedback Collection System
+#### 1. Alert Management System
 
-**File: `src/services/feedback.service.ts`**
+**File: `src/services/alert.service.ts`**
 
 ```typescript
-- createFeedback(data): Create feedback from any channel
-- getFeedback(filters, pagination): Retrieve feedback with filters
-- processFeedback(feedbackId): Queue for sentiment analysis
-- bulkCreateFeedback(dataArray): Batch feedback import
+- createAlert(type, severity, data)
+- getAlerts(filters, pagination): List alerts with filters
+- getAlertById(id): Get single alert
+- updateAlert(id, data): Update alert status
+- assignAlert(alertId, userId): Assign alert to user
+- resolveAlert(alertId, resolution): Resolve alert
+- checkSentimentSpike(): Monitor for spikes
+- checkHighVolumeNegative(): Detect negative volume
+- checkTrendingTopics(): Identify new trends
 ```
 
-**File: `src/controllers/feedback.controller.ts`**
+**File: `src/controllers/alert.controller.ts`**
 
 ```typescript
-- POST /api/v1/feedback (create single feedback)
-- POST /api/v1/feedback/bulk (create multiple)
-- GET /api/v1/feedback (list with filters)
-- GET /api/v1/feedback/:id (get single)
-- GET /api/v1/feedback/stats (channel stats)
+- GET /api/v1/alerts (list alerts)
+- POST /api/v1/alerts (create alert - ADMIN only)
+- GET /api/v1/alerts/:id (get alert)
+- PATCH /api/v1/alerts/:id (update status)
+- POST /api/v1/alerts/:id/assign (assign to user)
+- POST /api/v1/alerts/:id/resolve (resolve alert)
 ```
 
-**Channel-specific endpoints:**
+**Alert Worker (Future):**
 
 ```typescript
-- POST /api/v1/feedback/in-app (in-app surveys)
-- POST /api/v1/feedback/chatbot (chatbot logs)
-- POST /api/v1/feedback/voice (voice transcripts)
-- POST /api/v1/feedback/social (social media)
+- Run checks every 5-15 minutes
+- Compare current metrics to thresholds
+- Create alerts when triggered
+- Send notifications (email, WebSocket)
+```
+
+#### 2. Topic Management System
+
+**File: `src/services/topic.service.ts`**
+
+```typescript
+- createTopic(name, description, category)
+- getTopics(filters, pagination): List topics with filters
+- getTopicById(id): Get single topic
+- updateTopic(id, data): Update topic
+- deleteTopic(id): Delete topic
+- getTopicStats(id): Get usage statistics
+- autoDetectTopics(feedbackId): Use NLP (future)
+```
+
+**File: `src/controllers/topic.controller.ts`**
+
+```typescript
+- POST /api/v1/topics (create)
+- GET /api/v1/topics (list with pagination)
+- GET /api/v1/topics/:id (get single)
+- PUT /api/v1/topics/:id (update)
+- DELETE /api/v1/topics/:id (delete)
+- GET /api/v1/topics/:id/stats (usage statistics)
 ```
 
 #### 3. Sentiment Analysis Service
@@ -157,117 +188,10 @@
 - Call sentiment service
 - Store results in SentimentAnalysis table
 - Trigger alerts if needed
+- Broadcast updates via WebSocket
 ```
 
-#### 4. Dashboard & Analytics
-
-**File: `src/services/dashboard.service.ts`**
-
-```typescript
-- getOverallStats(dateRange): Overall metrics
-- getSentimentTrends(dateRange): Time-series data
-- getChannelPerformance(): Per-channel metrics
-- getTrendingTopics(limit): Most mentioned topics
-- getEmotionBreakdown(): Emotion distribution
-- getCustomerSegmentAnalysis(): Segment-wise analysis
-```
-
-**File: `src/controllers/dashboard.controller.ts`**
-
-```typescript
-- GET /api/v1/dashboard/stats (real-time overview)
-- GET /api/v1/dashboard/trends (sentiment over time)
-- GET /api/v1/dashboard/channels (channel breakdown)
-- GET /api/v1/dashboard/topics (trending topics)
-- GET /api/v1/dashboard/emotions (emotion analysis)
-```
-
-**Metrics Aggregation Worker:**
-
-```typescript
-- Hourly: Aggregate feedback into MetricsSnapshot
-- Daily: Roll up hourly data
-- Cache: Store in Redis with TTL
-```
-
-#### 5. Alert System
-
-**File: `src/services/alert.service.ts`**
-
-```typescript
-- createAlert(type, severity, data)
-- checkSentimentSpike(): Monitor for spikes
-- checkHighVolumeNegative(): Detect negative volume
-- checkTrendingTopics(): Identify new trends
-- assignAlert(alertId, userId)
-- resolveAlert(alertId, resolution)
-```
-
-**File: `src/controllers/alert.controller.ts`**
-
-```typescript
-- GET /api/v1/alerts (list alerts)
-- GET /api/v1/alerts/:id (get alert)
-- PATCH /api/v1/alerts/:id (update status)
-- POST /api/v1/alerts/:id/assign (assign to user)
-- POST /api/v1/alerts/:id/resolve (resolve alert)
-```
-
-**Alert Worker:**
-
-```typescript
-- Run checks every 5-15 minutes
-- Compare current metrics to thresholds
-- Create alerts when triggered
-- Send notifications (email, WebSocket)
-```
-
-#### 6. Topic Management
-
-**File: `src/services/topic.service.ts`**
-
-```typescript
-- createTopic(name, description, category)
-- getTopics(filters)
-- updateTopic(id, data)
-- deleteTopic(id)
-- autoDetectTopics(feedbackId): Use NLP
-```
-
-**File: `src/controllers/topic.controller.ts`**
-
-```typescript
-- POST /api/v1/topics (create)
-- GET /api/v1/topics (list)
-- PUT /api/v1/topics/:id (update)
-- DELETE /api/v1/topics/:id (delete)
-```
-
-#### 7. User Management
-
-**File: `src/services/user.service.ts`**
-
-```typescript
--createUser(data) -
-  getUsers(filters, pagination) -
-  getUserById(id) -
-  updateUser(id, data) -
-  deleteUser(id) -
-  toggleUserStatus(id, isActive);
-```
-
-**File: `src/controllers/user.controller.ts`**
-
-```typescript
-- POST /api/v1/users (ADMIN only)
-- GET /api/v1/users (MANAGER+)
-- GET /api/v1/users/:id
-- PUT /api/v1/users/:id
-- DELETE /api/v1/users/:id
-- PATCH /api/v1/users/:id/status
-```
-
-#### 8. WebSocket Events
+#### 4. WebSocket Events Service
 
 **File: `src/services/websocket.service.ts`**
 
@@ -284,7 +208,7 @@
 - `alerts` - Alert notifications
 - `feedback-{channel}` - Channel-specific updates
 
-#### 9. Background Workers
+#### 5. Background Workers (BullMQ)
 
 **File: `src/workers/index.ts`**
 
@@ -325,24 +249,6 @@
 - Create alerts
 - Send notifications
 ```
-
-#### 10. Validation Schemas
-
-**File: `src/validators/auth.validators.ts`**
-
-```typescript
--registerSchema - loginSchema - refreshTokenSchema;
-```
-
-**File: `src/validators/feedback.validators.ts`**
-
-```typescript
--createFeedbackSchema - feedbackFilterSchema - bulkFeedbackSchema;
-```
-
-**File: `src/validators/user.validators.ts`**
-**File: `src/validators/alert.validators.ts`**
-**File: `src/validators/topic.validators.ts`**
 
 ---
 

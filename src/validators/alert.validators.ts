@@ -22,8 +22,8 @@ export const alertFilterSchema = z.object({
   severity: z.nativeEnum(AlertSeverity).optional(),
   status: z.nativeEnum(AlertStatus).optional(),
   assignedToId: z.string().optional(),
-  page: z.string().optional().default('1'),
-  limit: z.string().optional().default('20'),
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("20"),
   sort: z.string().optional(),
 });
 

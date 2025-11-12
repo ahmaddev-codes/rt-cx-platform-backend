@@ -14,7 +14,7 @@ export class DashboardService {
    */
   async getOverallStats(dateRange?: DateRange) {
     const cacheKey = `dashboard:stats:${dateRange?.startDate?.toISOString()}-${dateRange?.endDate?.toISOString()}`;
-    
+
     // Try cache first
     const cached = await getCached(cacheKey);
     if (cached) return cached;
@@ -37,19 +37,24 @@ export class DashboardService {
 
     // Get sentiment breakdown
     const sentimentBreakdown = await prisma.sentimentAnalysis.groupBy({
-      by: ['sentiment'],
-      where: dateRange ? {
-        feedback: {
-          createdAt: where.createdAt,
-        },
-      } : undefined,
+      by: ["sentiment"],
+      where: dateRange
+        ? {
+            feedback: {
+              createdAt: where.createdAt,
+            },
+          }
+        : undefined,
       _count: { sentiment: true },
     });
 
-    const sentimentMap = sentimentBreakdown.reduce((acc, item) => {
-      acc[item.sentiment.toLowerCase()] = item._count.sentiment;
-      return acc;
-    }, {} as Record<string, number>);
+    const sentimentMap = sentimentBreakdown.reduce(
+      (acc, item) => {
+        acc[item.sentiment.toLowerCase()] = item._count.sentiment;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // Get trending topics
     const trendingTopics = await this.getTrendingTopics(10, dateRange);
@@ -59,8 +64,8 @@ export class DashboardService {
 
     // Get recent alerts
     const recentAlerts = await prisma.alert.findMany({
-      where: { status: 'OPEN' },
-      orderBy: { createdAt: 'desc' },
+      where: { status: "OPEN" },
+      orderBy: { createdAt: "desc" },
       take: 5,
       include: {
         assignedTo: {
@@ -77,15 +82,15 @@ export class DashboardService {
       totalFeedback,
       averageRating: avgResult._avg.rating || 0,
       sentimentBreakdown: {
-        very_positive: sentimentMap['very_positive'] || 0,
-        positive: sentimentMap['positive'] || 0,
-        neutral: sentimentMap['neutral'] || 0,
-        negative: sentimentMap['negative'] || 0,
-        very_negative: sentimentMap['very_negative'] || 0,
+        very_positive: sentimentMap["very_positive"] || 0,
+        positive: sentimentMap["positive"] || 0,
+        neutral: sentimentMap["neutral"] || 0,
+        negative: sentimentMap["negative"] || 0,
+        very_negative: sentimentMap["very_negative"] || 0,
       },
       trendingTopics,
       channelPerformance,
-      recentAlerts: recentAlerts.map(alert => ({
+      recentAlerts: recentAlerts.map((alert) => ({
         ...alert,
         createdAt: alert.createdAt.toISOString(),
         updatedAt: alert.updatedAt.toISOString(),
@@ -103,12 +108,12 @@ export class DashboardService {
    * Get sentiment trends over time
    */
   async getSentimentTrends(
-    interval: 'hour' | 'day' | 'week' = 'day',
+    interval: "hour" | "day" | "week" = "day",
     dateRange?: DateRange,
     channel?: FeedbackChannel
   ) {
     const where: Prisma.FeedbackWhereInput = {};
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       where.createdAt = {};
       if (dateRange.startDate) where.createdAt.gte = dateRange.startDate;
@@ -130,7 +135,7 @@ export class DashboardService {
           },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { createdAt: "asc" },
     });
 
     // Group by time interval
@@ -144,7 +149,7 @@ export class DashboardService {
    */
   async getChannelPerformance(dateRange?: DateRange) {
     const where: Prisma.FeedbackWhereInput = {};
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       where.createdAt = {};
       if (dateRange.startDate) where.createdAt.gte = dateRange.startDate;
@@ -152,13 +157,13 @@ export class DashboardService {
     }
 
     const channelStats = await prisma.feedback.groupBy({
-      by: ['channel'],
+      by: ["channel"],
       where,
       _count: { id: true },
       _avg: { rating: true },
     });
 
-    return channelStats.map(stat => ({
+    return channelStats.map((stat) => ({
       channel: stat.channel,
       count: stat._count.id,
       averageRating: stat._avg.rating || 0,
@@ -170,7 +175,7 @@ export class DashboardService {
    */
   async getTrendingTopics(limit: number = 10, dateRange?: DateRange) {
     const where: Prisma.FeedbackWhereInput = {};
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       where.createdAt = {};
       if (dateRange.startDate) where.createdAt.gte = dateRange.startDate;
@@ -188,13 +193,13 @@ export class DashboardService {
     });
 
     const topicsWithCount = topics
-      .map(topic => ({
+      .map((topic) => ({
         id: topic.id,
         name: topic.name,
         category: topic.category,
         count: topic.feedback.length,
       }))
-      .filter(topic => topic.count > 0)
+      .filter((topic) => topic.count > 0)
       .sort((a, b) => b.count - a.count)
       .slice(0, limit);
 
@@ -206,7 +211,7 @@ export class DashboardService {
    */
   async getEmotionBreakdown(dateRange?: DateRange) {
     const where: Prisma.SentimentAnalysisWhereInput = {};
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       const createdAtFilter: any = {};
       if (dateRange.startDate) {
@@ -221,7 +226,7 @@ export class DashboardService {
     }
 
     const emotions = await prisma.sentimentAnalysis.groupBy({
-      by: ['primaryEmotion'],
+      by: ["primaryEmotion"],
       where: {
         ...where,
         primaryEmotion: { not: null },
@@ -231,7 +236,7 @@ export class DashboardService {
 
     const total = emotions.reduce((sum, e) => sum + e._count.primaryEmotion, 0);
 
-    return emotions.map(emotion => ({
+    return emotions.map((emotion) => ({
       emotion: emotion.primaryEmotion as Emotion,
       count: emotion._count.primaryEmotion,
       percentage: total > 0 ? (emotion._count.primaryEmotion / total) * 100 : 0,
@@ -245,7 +250,7 @@ export class DashboardService {
     const where: Prisma.FeedbackWhereInput = {
       customerSegment: { not: null },
     };
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       where.createdAt = {};
       if (dateRange.startDate) where.createdAt.gte = dateRange.startDate;
@@ -253,15 +258,15 @@ export class DashboardService {
     }
 
     const segments = await prisma.feedback.groupBy({
-      by: ['customerSegment'],
+      by: ["customerSegment"],
       where,
       _count: { id: true },
       _avg: { rating: true },
     });
 
     return segments
-      .filter(s => s.customerSegment)
-      .map(segment => ({
+      .filter((s) => s.customerSegment)
+      .map((segment) => ({
         segment: segment.customerSegment!,
         count: segment._count.id,
         averageRating: segment._avg.rating || 0,
@@ -275,7 +280,7 @@ export class DashboardService {
     const where: Prisma.FeedbackWhereInput = {
       journeyStage: { not: null },
     };
-    
+
     if (dateRange?.startDate || dateRange?.endDate) {
       where.createdAt = {};
       if (dateRange.startDate) where.createdAt.gte = dateRange.startDate;
@@ -283,15 +288,15 @@ export class DashboardService {
     }
 
     const stages = await prisma.feedback.groupBy({
-      by: ['journeyStage'],
+      by: ["journeyStage"],
       where,
       _count: { id: true },
       _avg: { rating: true },
     });
 
     return stages
-      .filter(s => s.journeyStage)
-      .map(stage => ({
+      .filter((s) => s.journeyStage)
+      .map((stage) => ({
         stage: stage.journeyStage!,
         count: stage._count.id,
         averageRating: stage._avg.rating || 0,
@@ -301,7 +306,7 @@ export class DashboardService {
   /**
    * Group feedbacks by time interval
    */
-  private groupByInterval(feedbacks: any[], interval: 'hour' | 'day' | 'week') {
+  private groupByInterval(feedbacks: any[], interval: "hour" | "day" | "week") {
     const grouped = new Map<string, Map<Sentiment, number>>();
 
     for (const feedback of feedbacks) {
@@ -310,18 +315,18 @@ export class DashboardService {
       const date = new Date(feedback.createdAt);
       let key: string;
 
-      if (interval === 'hour') {
+      if (interval === "hour") {
         date.setMinutes(0, 0, 0);
         key = date.toISOString();
-      } else if (interval === 'day') {
+      } else if (interval === "day") {
         date.setHours(0, 0, 0, 0);
-        key = date.toISOString().split('T')[0];
+        key = date.toISOString().split("T")[0];
       } else {
         // Week
         const weekStart = new Date(date);
         weekStart.setDate(date.getDate() - date.getDay());
         weekStart.setHours(0, 0, 0, 0);
-        key = weekStart.toISOString().split('T')[0];
+        key = weekStart.toISOString().split("T")[0];
       }
 
       if (!grouped.has(key)) {
