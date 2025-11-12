@@ -9,7 +9,7 @@ const envSchema = z.object({
     .enum(["development", "production", "test"])
     .default("development"),
   PORT: z.string().default("4000"),
-  FRONTEND_URL: z.string().url(),
+  FRONTEND_URL: z.string().min(1), // Comma-separated URLs for multiple origins
 
   // Database
   DATABASE_URL: z.string().min(1),
@@ -22,7 +22,10 @@ const envSchema = z.object({
   JWT_EXPIRES_IN: z.string().default("7d"),
   JWT_REFRESH_EXPIRES_IN: z.string().default("30d"),
 
-  // NLP Service (Optional)
+  // Hugging Face NLP Integration (Required)
+  HUGGINGFACE_API_KEY: z.string().min(1, "Hugging Face API key is required"),
+
+  // Legacy NLP Service (Optional - deprecated)
   NLP_SERVICE_URL: z.string().url().optional(),
   NLP_API_KEY: z.string().optional(),
 

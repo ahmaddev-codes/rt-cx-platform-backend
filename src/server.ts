@@ -3,6 +3,8 @@ import { env } from "./config/env";
 import { logger } from "./utils/logger";
 import { prisma } from "./utils/prisma";
 import { redis } from "./utils/redis";
+import { initializeWorkers, shutdownWorkers } from "./workers/index";
+import { sentimentService } from "./services/sentiment.service";
 
 async function startServer() {
   try {
@@ -13,6 +15,14 @@ async function startServer() {
     // Test Redis connection
     await redis.ping();
     logger.info("✅ Redis connected");
+
+    // Initialize background workers
+    await initializeWorkers();
+    logger.info("✅ Background workers initialized");
+
+    // Warm up NLP models
+    await sentimentService.warmUpModels();
+    logger.info("✅ NLP models warmed up");
 
     // Create and start server
     const { app, io } = createApp();
@@ -38,6 +48,10 @@ async function startServer() {
 
       server.close(async () => {
         logger.info("HTTP server closed");
+
+        // Shutdown background workers
+        await shutdownWorkers();
+        logger.info("Background workers shut down");
 
         // Close database connection
         await prisma.$disconnect();
