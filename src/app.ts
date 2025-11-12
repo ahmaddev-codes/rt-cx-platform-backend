@@ -11,10 +11,10 @@ import { errorHandler } from "./middleware/errorHandler.middleware";
 import { apiLimiter } from "./middleware/rateLimit.middleware";
 import { logger } from "./utils/logger";
 
-// Import routes (to be created)
-// import authRoutes from './routes/auth.routes';
-// import userRoutes from './routes/user.routes';
-// import feedbackRoutes from './routes/feedback.routes';
+// Import routes
+import authRoutes from "./routes/auth.routes";
+import userRoutes from "./routes/user.routes";
+import feedbackRoutes from "./routes/feedback.routes";
 // import dashboardRoutes from './routes/dashboard.routes';
 // import alertRoutes from './routes/alert.routes';
 // import topicRoutes from './routes/topic.routes';
@@ -79,10 +79,10 @@ export function createApp(): { app: Application; io: Server } {
   // Rate limiting for API routes
   app.use("/api", apiLimiter);
 
-  // API routes (uncomment when routes are created)
-  // app.use('/api/v1/auth', authRoutes);
-  // app.use('/api/v1/users', userRoutes);
-  // app.use('/api/v1/feedback', feedbackRoutes);
+  // API routes
+  app.use("/api/v1/auth", authRoutes);
+  app.use("/api/v1/users", userRoutes);
+  app.use("/api/v1/feedback", feedbackRoutes);
   // app.use('/api/v1/dashboard', dashboardRoutes);
   // app.use('/api/v1/alerts', alertRoutes);
   // app.use('/api/v1/topics', topicRoutes);
