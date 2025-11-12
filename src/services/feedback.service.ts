@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma";
 import { AppError } from "../middleware/errorHandler.middleware";
 import { FeedbackChannel, Sentiment, Prisma } from "@prisma/client";
+import { wsService } from "./websocket.service";
 
 interface CreateFeedbackData {
   userId?: string;
@@ -59,6 +60,9 @@ export class FeedbackService {
 
     // TODO: Queue for sentiment analysis
     // await sentimentQueue.add('analyze', { feedbackId: feedback.id });
+
+    // Broadcast new feedback via WebSocket
+    wsService.broadcastNewFeedback(this.formatFeedback(feedback));
 
     return this.formatFeedback(feedback);
   }

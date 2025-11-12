@@ -1,6 +1,7 @@
 import { Prisma, AlertType, AlertSeverity, AlertStatus } from "@prisma/client";
 import { prisma } from "../utils/prisma";
 import { AppError } from "../middleware/errorHandler.middleware";
+import { wsService } from "./websocket.service";
 
 interface CreateAlertInput {
   type: AlertType;
@@ -50,6 +51,9 @@ export class AlertService {
         },
       },
     });
+
+    // Broadcast new alert via WebSocket
+    wsService.broadcastNewAlert(alert);
 
     return alert;
   }
@@ -175,6 +179,9 @@ export class AlertService {
       },
     });
 
+    // Broadcast alert update via WebSocket
+    wsService.broadcastAlertUpdate(updated);
+
     return updated;
   }
 
@@ -212,6 +219,9 @@ export class AlertService {
         },
       },
     });
+
+    // Broadcast alert assignment via WebSocket
+    wsService.broadcastAlertUpdate(updated);
 
     return updated;
   }
@@ -255,6 +265,9 @@ export class AlertService {
         },
       },
     });
+
+    // Broadcast alert resolution via WebSocket
+    wsService.broadcastAlertUpdate(updated);
 
     return updated;
   }

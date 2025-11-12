@@ -10,6 +10,8 @@ import { loggerMiddleware } from "./middleware/logger.middleware";
 import { errorHandler } from "./middleware/errorHandler.middleware";
 import { apiLimiter } from "./middleware/rateLimit.middleware";
 import { logger } from "./utils/logger";
+import { wsService } from "./services/websocket.service";
+import { verifyAccessToken } from "./utils/jwt";
 
 // Import routes
 import authRoutes from "./routes/auth.routes";
@@ -101,22 +103,100 @@ export function createApp(): { app: Application; io: Server } {
   // Error handling middleware (must be last)
   app.use(errorHandler);
 
+  // Initialize WebSocket service
+  wsService.initialize(io);
+
+  // WebSocket authentication middleware
+  io.use((socket, next) => {
+    const token =
+      socket.handshake.auth.token ||
+      socket.handshake.headers.authorization?.replace("Bearer ", "");
+
+    if (!token) {
+      logger.warn(
+        `WebSocket connection rejected: No token provided (${socket.id})`
+      );
+      return next(new Error("Authentication required"));
+    }
+
+    try {
+      const payload = verifyAccessToken(token);
+      socket.data.user = payload;
+      logger.info(
+        `WebSocket client authenticated: ${socket.id} (User: ${payload.userId})`
+      );
+      next();
+    } catch (error) {
+      logger.warn(
+        `WebSocket connection rejected: Invalid token (${socket.id})`
+      );
+      return next(new Error("Invalid token"));
+    }
+  });
+
   // WebSocket connection handling
   io.on("connection", (socket) => {
-    logger.info(`WebSocket client connected: ${socket.id}`);
+    const userId = socket.data.user?.userId;
+    logger.info(`WebSocket client connected: ${socket.id} (User: ${userId})`);
 
+    // Auto-subscribe to user-specific room
+    if (userId) {
+      socket.join(`user-${userId}`);
+    }
+
+    // Handle room subscriptions
     socket.on("subscribe", (room: string) => {
-      socket.join(room);
-      logger.info(`Client ${socket.id} subscribed to ${room}`);
+      // Validate room access based on user role
+      const allowedRooms = [
+        "dashboard",
+        "alerts",
+        "feedback-IN_APP_SURVEY",
+        "feedback-CHATBOT",
+        "feedback-VOICE_CALL",
+        "feedback-SOCIAL_MEDIA",
+        "feedback-EMAIL",
+        "feedback-WEB_FORM",
+        "feedback-SMS",
+      ];
+
+      if (allowedRooms.includes(room) || room.startsWith("user-")) {
+        socket.join(room);
+        logger.info(`Client ${socket.id} subscribed to ${room}`);
+        socket.emit("subscribed", {
+          room,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        logger.warn(
+          `Client ${socket.id} attempted to subscribe to invalid room: ${room}`
+        );
+        socket.emit("error", { message: "Invalid room" });
+      }
     });
 
+    // Handle room unsubscriptions
     socket.on("unsubscribe", (room: string) => {
       socket.leave(room);
       logger.info(`Client ${socket.id} unsubscribed from ${room}`);
+      socket.emit("unsubscribed", {
+        room,
+        timestamp: new Date().toISOString(),
+      });
     });
 
-    socket.on("disconnect", () => {
-      logger.info(`WebSocket client disconnected: ${socket.id}`);
+    // Handle ping/pong for connection health
+    socket.on("ping", () => {
+      socket.emit("pong", { timestamp: new Date().toISOString() });
+    });
+
+    socket.on("disconnect", (reason) => {
+      logger.info(
+        `WebSocket client disconnected: ${socket.id} (User: ${userId}, Reason: ${reason})`
+      );
+    });
+
+    socket.on("error", (error) => {
+      logger.error(`WebSocket error for client ${socket.id}:`, error);
     });
   });
 
