@@ -1,7 +1,6 @@
 import { prisma } from "../utils/prisma";
 import { AppError } from "../middleware/errorHandler.middleware";
 import { FeedbackChannel, Sentiment, Prisma } from "@prisma/client";
-import { CONSTANTS } from "../config/constants";
 
 interface CreateFeedbackData {
   userId?: string;
