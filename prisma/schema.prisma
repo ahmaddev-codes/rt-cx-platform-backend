@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User management with role-based access
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(AGENT)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  feedback  Feedback[]
+  alerts    Alert[]
+  sessions  Session[]
+
+  @@index([email])
+  @@index([role])
+}
+
+enum Role {
+  ADMIN      // Full system access
+  MANAGER    // View all data, manage alerts
+  AGENT      // View assigned feedback
+  API_USER   // External API integration
+}
+
+// Refresh token sessions
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  refreshToken String   @unique
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([refreshToken])
+}
+
+// Multi-channel feedback collection
+model Feedback {
+  id          String         @id @default(cuid())
+  userId      String?        // Optional - can be anonymous
+  channel     FeedbackChannel
+  source      String?        // Specific source within channel (e.g., "mobile-app", "web-app")
+  
+  // Core feedback data
+  rating      Int?           // 1-5 stars or emoji scale
+  comment     String?        @db.Text
+  metadata    Json?          // Channel-specific data (transaction ID, page URL, etc.)
+  
+  // Context
+  customerSegment String?    // VIP, Regular, New, etc.
+  journeyStage    String?    // Onboarding, Transaction, Support, etc.
+  
+  // Processing status
+  processed   Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  user              User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  sentimentAnalysis SentimentAnalysis?
+  topics            Topic[]
+
+  @@index([channel])
+  @@index([processed])
+  @@index([createdAt])
+  @@index([customerSegment])
+}
+
+enum FeedbackChannel {
+  IN_APP_SURVEY    // Micro-surveys in banking app
+  CHATBOT          // Chatbot interaction logs
+  VOICE_CALL       // Transcribed customer service calls
+  SOCIAL_MEDIA     // Twitter, Reddit, Facebook mentions
+  EMAIL            // Email feedback
+  WEB_FORM         // Website contact forms
+  SMS              // SMS feedback
+}
+
+// AI-powered sentiment analysis results
+model SentimentAnalysis {
+  id         String   @id @default(cuid())
+  feedbackId String   @unique
+  
+  // Sentiment scores
+  sentiment       Sentiment
+  sentimentScore  Float          // -1 (very negative) to 1 (very positive)
+  confidence      Float          // 0 to 1
+  
+  // Emotion detection
+  emotions        Json           // { "joy": 0.8, "frustration": 0.2, ... }
+  primaryEmotion  Emotion?
+  
+  // Analysis metadata
+  detectedLanguage String?
+  wordCount        Int?
+  keyPhrases       String[]       // Important phrases extracted
+  
+  analyzedAt DateTime @default(now())
+  
+  feedback Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  @@index([sentiment])
+  @@index([primaryEmotion])
+  @@index([analyzedAt])
+}
+
+enum Sentiment {
+  VERY_POSITIVE
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  VERY_NEGATIVE
+}
+
+enum Emotion {
+  JOY
+  SATISFACTION
+  NEUTRAL
+  FRUSTRATION
+  ANGER
+  SADNESS
+  CONFUSION
+  SURPRISE
+}
+
+// Topic modeling - recurring themes in feedback
+model Topic {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  category    String?  // "service", "product", "technical", "pricing"
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  feedback Feedback[]
+
+  @@index([category])
+}
+
+// Real-time alerts for significant events
+model Alert {
+  id          String      @id @default(cuid())
+  type        AlertType
+  severity    AlertSeverity
+  title       String
+  message     String      @db.Text
+  
+  // Alert triggers
+  threshold   Json?       // Threshold configuration that triggered alert
+  dataSnapshot Json?      // Snapshot of data at alert time
+  
+  // Assignment
+  assignedToId String?
+  status       AlertStatus @default(OPEN)
+  
+  // Resolution
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  resolution   String?     @db.Text
+  
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  assignedTo User? @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([createdAt])
+}
+
+enum AlertType {
+  SENTIMENT_SPIKE         // Sudden negative sentiment increase
+  HIGH_VOLUME_NEGATIVE    // Unusual volume of negative feedback
+  TRENDING_TOPIC          // New topic emerging
+  CHANNEL_PERFORMANCE     // Channel-specific issue
+  CUSTOMER_CHURN_RISK     // Pattern indicates potential churn
+  SYSTEM_ANOMALY          // Technical anomaly detected
+}
+
+enum AlertSeverity {
+  CRITICAL    // Immediate action required
+  HIGH        // Action required within hours
+  MEDIUM      // Action required within days
+  LOW         // Informational
+}
+
+enum AlertStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+// Dashboard configuration (saved views)
+model Dashboard {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  
+  // Configuration
+  widgets     Json     // Widget layout and settings
+  filters     Json?    // Default filters
+  
+  // Access control
+  isPublic    Boolean  @default(false)
+  createdBy   String
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isPublic])
+  @@index([createdBy])
+}
+
+// Aggregated metrics for performance optimization
+model MetricsSnapshot {
+  id        String   @id @default(cuid())
+  
+  // Time period
+  date      DateTime @db.Date
+  hour      Int?     // Null for daily snapshots, 0-23 for hourly
+  
+  // Metrics
+  channel   FeedbackChannel?
+  
+  totalFeedback      Int      @default(0)
+  averageRating      Float?
+  sentimentBreakdown Json     // { "positive": 60, "neutral": 30, "negative": 10 }
+  topEmotions        Json     // [ { "emotion": "joy", "count": 45 }, ... ]
+  topTopics          Json     // [ { "topic": "login issues", "count": 12 }, ... ]
+  
+  createdAt DateTime @default(now())
+
+  @@unique([date, hour, channel])
+  @@index([date])
+  @@index([channel])
+}
+
+// API usage tracking for rate limiting and analytics
+model ApiUsage {
+  id         String   @id @default(cuid())
+  userId     String?
+  endpoint   String
+  method     String
+  statusCode Int
+  responseTime Int    // milliseconds
+  ipAddress  String?
+  userAgent  String?
+  
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([endpoint])
+  @@index([createdAt])
+}
