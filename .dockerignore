@@ -1,0 +1,50 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+dist
+build
+
+# Environment
+.env
+.env.local
+.env.production
+.env.*.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+*.log
+
+# Git
+.git
+.gitignore
+
+# Testing
+coverage
+.nyc_output
+
+# Prisma
+.prisma
+
+# Documentation
+*.md
+!README.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Misc
+.editorconfig
+.eslintrc
+.prettierrc
