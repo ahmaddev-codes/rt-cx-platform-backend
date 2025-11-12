@@ -10,6 +10,7 @@ import { loggerMiddleware } from "./middleware/logger.middleware";
 import { errorHandler } from "./middleware/errorHandler.middleware";
 import { apiLimiter } from "./middleware/rateLimit.middleware";
 import { logger } from "./utils/logger";
+import { prisma } from "./utils/prisma";
 import { wsService } from "./services/websocket.service";
 import { verifyAccessToken } from "./utils/jwt";
 
@@ -20,15 +21,19 @@ import feedbackRoutes from "./routes/feedback.routes";
 import dashboardRoutes from "./routes/dashboard.routes";
 import alertRoutes from "./routes/alert.routes";
 import topicRoutes from "./routes/topic.routes";
+import demoRoutes from "./routes/demo.routes";
 
 export function createApp(): { app: Application; io: Server } {
   const app = express();
   const httpServer = createServer(app);
 
+  // Parse allowed origins from comma-separated FRONTEND_URL
+  const allowedOrigins = env.FRONTEND_URL.split(",").map((url) => url.trim());
+
   // Initialize Socket.IO
   const io = new Server(httpServer, {
     cors: {
-      origin: env.FRONTEND_URL,
+      origin: allowedOrigins,
       methods: ["GET", "POST"],
       credentials: true,
     },
@@ -44,9 +49,9 @@ export function createApp(): { app: Application; io: Server } {
   // CORS configuration
   app.use(
     cors({
-      origin: env.FRONTEND_URL,
+      origin: allowedOrigins,
       credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization"],
     })
   );
@@ -59,12 +64,43 @@ export function createApp(): { app: Application; io: Server } {
   app.use(loggerMiddleware);
 
   // Health check
-  app.get("/health", (_req, res) => {
-    res.json({
-      status: "ok",
+  app.get("/health", async (_req, res) => {
+    const health = {
+      status: "healthy",
       timestamp: new Date().toISOString(),
       environment: env.NODE_ENV,
-    });
+      version: "1.0.0",
+      services: {
+        database: "unknown",
+        redis: "unknown",
+        websocket: "active",
+        workers: "unknown",
+      },
+    };
+
+    try {
+      // Check database
+      await prisma.$queryRaw`SELECT 1`;
+      health.services.database = "connected";
+    } catch (error) {
+      health.services.database = "disconnected";
+      health.status = "degraded";
+    }
+
+    try {
+      // Check Redis
+      const { redis } = await import("./utils/redis");
+      await redis.ping();
+      health.services.redis = "connected";
+      health.services.workers = "running";
+    } catch (error) {
+      health.services.redis = "disconnected";
+      health.services.workers = "stopped";
+      health.status = "degraded";
+    }
+
+    const statusCode = health.status === "healthy" ? 200 : 503;
+    res.status(statusCode).json(health);
   });
 
   // API documentation
@@ -88,6 +124,7 @@ export function createApp(): { app: Application; io: Server } {
   app.use("/api/v1/dashboard", dashboardRoutes);
   app.use("/api/v1/alerts", alertRoutes);
   app.use("/api/v1/topics", topicRoutes);
+  app.use("/api/v1/admin", demoRoutes); // Demo/admin endpoints
 
   // Catch-all for undefined routes
   app.use("*", (req, res) => {

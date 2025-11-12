@@ -41,6 +41,7 @@
   },
   "dependencies": {
     "@prisma/client": "^5.7.0",
+    "axios": "^1.13.2",
     "bcryptjs": "^2.4.3",
     "bullmq": "^4.15.0",
     "cors": "^2.8.5",

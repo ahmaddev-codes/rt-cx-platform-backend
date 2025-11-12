@@ -2,6 +2,8 @@ import { prisma } from "../utils/prisma";
 import { AppError } from "../middleware/errorHandler.middleware";
 import { FeedbackChannel, Sentiment, Prisma } from "@prisma/client";
 import { wsService } from "./websocket.service";
+import { sentimentQueue } from "../workers/index";
+import { logger } from "../utils/logger";
 
 interface CreateFeedbackData {
   userId?: string;
@@ -58,8 +60,37 @@ export class FeedbackService {
       },
     });
 
-    // TODO: Queue for sentiment analysis
-    // await sentimentQueue.add('analyze', { feedbackId: feedback.id });
+    // Queue for sentiment analysis if there's a comment
+    if (feedback.comment && feedback.comment.trim().length > 0) {
+      try {
+        // Determine priority based on customer segment (VIP = higher priority)
+        const priority = data.customerSegment === "VIP" ? 1 : 5;
+
+        await sentimentQueue.add(
+          "analyze",
+          {
+            feedbackId: feedback.id,
+            text: feedback.comment,
+            priority,
+            channelId: feedback.channel,
+          },
+          { priority }
+        );
+
+        logger.info(`Queued sentiment analysis for feedback: ${feedback.id}`, {
+          priority,
+          channel: feedback.channel,
+        });
+      } catch (error) {
+        logger.error(
+          `Failed to queue sentiment analysis for feedback: ${feedback.id}`,
+          {
+            error,
+          }
+        );
+        // Don't fail the entire request if queueing fails
+      }
+    }
 
     // Broadcast new feedback via WebSocket
     wsService.broadcastNewFeedback(this.formatFeedback(feedback));
@@ -89,10 +120,36 @@ export class FeedbackService {
       )
     );
 
-    // TODO: Queue all for sentiment analysis
-    // for (const feedback of created) {
-    //   await sentimentQueue.add('analyze', { feedbackId: feedback.id });
-    // }
+    // Queue all for sentiment analysis
+    for (const feedback of created) {
+      if (feedback.comment && feedback.comment.trim().length > 0) {
+        try {
+          const priority = 5; // Normal priority for bulk imports
+
+          await sentimentQueue.add(
+            "analyze",
+            {
+              feedbackId: feedback.id,
+              text: feedback.comment,
+              priority,
+              channelId: feedback.channel,
+            },
+            { priority }
+          );
+        } catch (error) {
+          logger.error(
+            `Failed to queue sentiment analysis for feedback: ${feedback.id}`,
+            {
+              error,
+            }
+          );
+        }
+      }
+    }
+
+    logger.info(
+      `Queued ${created.length} feedback items for sentiment analysis`
+    );
 
     return {
       count: created.length,
