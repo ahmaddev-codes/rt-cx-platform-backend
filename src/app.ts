@@ -28,6 +28,9 @@ export function createApp(): { app: Application; io: Server } {
   const app = express();
   const httpServer = createServer(app);
 
+  // Trust proxy - required for Railway/production deployments
+  app.set("trust proxy", 1);
+
   // Parse allowed origins from comma-separated FRONTEND_URL
   const allowedOrigins = env.FRONTEND_URL.split(",").map((url) => url.trim());
 
