@@ -5,7 +5,7 @@
     "buildCommand": "pnpm install && pnpm db:generate && pnpm build"
   },
   "deploy": {
-    "startCommand": "pnpm db:push && node dist/server.js",
+    "startCommand": "npx prisma db push --skip-generate && node dist/server.js",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
