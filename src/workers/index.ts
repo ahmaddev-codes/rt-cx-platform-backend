@@ -2,6 +2,7 @@ import { Queue } from "bullmq";
 import { redisClient } from "../utils/redis";
 import { logger } from "../utils/logger";
 import { sentimentWorker } from "./sentiment.worker";
+import { transcriptionWorker } from "./transcription.worker";
 import { NLP_CONFIG } from "../config/nlp";
 
 /**
@@ -27,6 +28,28 @@ export const sentimentQueue = new Queue("sentiment-analysis", {
 });
 
 /**
+ * Transcription queue
+ */
+export const transcriptionQueue = new Queue("transcription", {
+  connection: redisClient,
+  defaultJobOptions: {
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 5000,
+    },
+    removeOnComplete: {
+      count: 50,
+      age: 24 * 3600,
+    },
+    removeOnFail: {
+      count: 200,
+      age: 7 * 24 * 3600,
+    },
+  },
+});
+
+/**
  * Initialize workers and queues
  */
 export async function initializeWorkers(): Promise<void> {
@@ -37,12 +60,17 @@ export async function initializeWorkers(): Promise<void> {
     await redisClient.ping();
     logger.info("Redis connection established");
 
-    // Worker is already initialized via import
+    // Workers are already initialized via import
     logger.info("Sentiment analysis worker initialized");
+    logger.info("Transcription worker initialized");
 
     // Log queue status
-    const jobCounts = await sentimentQueue.getJobCounts();
-    logger.info("Sentiment queue status", { counts: jobCounts });
+    const sentimentJobCounts = await sentimentQueue.getJobCounts();
+    const transcriptionJobCounts = await transcriptionQueue.getJobCounts();
+    logger.info("Sentiment queue status", { counts: sentimentJobCounts });
+    logger.info("Transcription queue status", {
+      counts: transcriptionJobCounts,
+    });
 
     logger.info("Background workers initialized successfully");
   } catch (error) {
@@ -59,7 +87,9 @@ export async function shutdownWorkers(): Promise<void> {
 
   try {
     await sentimentWorker.close();
+    await transcriptionWorker.close();
     await sentimentQueue.close();
+    await transcriptionQueue.close();
     logger.info("Background workers shut down successfully");
   } catch (error) {
     logger.error("Error shutting down background workers", { error });

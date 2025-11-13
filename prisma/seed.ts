@@ -1,4 +1,9 @@
-import { PrismaClient, FeedbackChannel, Sentiment, Emotion } from "@prisma/client";
+import {
+  PrismaClient,
+  FeedbackChannel,
+  Sentiment,
+  Emotion,
+} from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
@@ -18,12 +23,14 @@ async function main() {
   await prisma.user.deleteMany();
 
   // Create users
-  const hashedPassword = await bcrypt.hash("Password123!", 10);
+  const adminPassword = await bcrypt.hash("Admin123!@#", 10);
+  const managerPassword = await bcrypt.hash("Manager123!@#", 10);
+  const agentPassword = await bcrypt.hash("Agent123!@#", 10);
 
   const admin = await prisma.user.create({
     data: {
-      email: "admin@rtcx.com",
-      password: hashedPassword,
+      email: "admin@wemabank.com",
+      password: adminPassword,
       name: "Admin User",
       role: "ADMIN",
     },
@@ -31,8 +38,8 @@ async function main() {
 
   const manager = await prisma.user.create({
     data: {
-      email: "manager@rtcx.com",
-      password: hashedPassword,
+      email: "manager@wemabank.com",
+      password: managerPassword,
       name: "Manager User",
       role: "MANAGER",
     },
@@ -40,8 +47,8 @@ async function main() {
 
   const agent = await prisma.user.create({
     data: {
-      email: "agent@rtcx.com",
-      password: hashedPassword,
+      email: "agent@wemabank.com",
+      password: agentPassword,
       name: "Agent User",
       role: "AGENT",
     },
@@ -159,7 +166,7 @@ async function main() {
       journeyStage: "Transaction",
       processed: true,
       topics: {
-      connect: connectItems,
+        connect: connectItems,
       },
     };
 
@@ -271,10 +278,10 @@ async function main() {
   console.log("  - 2 alerts");
   console.log("  - 1 dashboard");
   console.log("  - 1 metrics snapshot");
-  console.log("\n🔐 Login credentials:");
-  console.log("  Admin: admin@rtcx.com / Password123!");
-  console.log("  Manager: manager@rtcx.com / Password123!");
-  console.log("  Agent: agent@rtcx.com / Password123!");
+  console.log("\n🔐 Demo Login Credentials (Wema Bank):");
+  console.log("  Admin: admin@wemabank.com / Admin123!@#");
+  console.log("  Manager: manager@wemabank.com / Manager123!@#");
+  console.log("  Agent: agent@wemabank.com / Agent123!@#");
 }
 
 main()

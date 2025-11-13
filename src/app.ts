@@ -22,6 +22,7 @@ import dashboardRoutes from "./routes/dashboard.routes";
 import alertRoutes from "./routes/alert.routes";
 import topicRoutes from "./routes/topic.routes";
 import demoRoutes from "./routes/demo.routes";
+import audioRoutes from "./routes/audio.routes";
 
 export function createApp(): { app: Application; io: Server } {
   const app = express();
@@ -124,6 +125,7 @@ export function createApp(): { app: Application; io: Server } {
   app.use("/api/v1/dashboard", dashboardRoutes);
   app.use("/api/v1/alerts", alertRoutes);
   app.use("/api/v1/topics", topicRoutes);
+  app.use("/api/v1/audio", audioRoutes); // Audio upload for demo
   app.use("/api/v1/admin", demoRoutes); // Demo/admin endpoints
 
   // Catch-all for undefined routes

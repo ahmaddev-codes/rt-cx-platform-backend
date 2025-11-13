@@ -42,6 +42,14 @@ const envSchema = z.object({
   AWS_SECRET_ACCESS_KEY: z.string().optional(),
   S3_BUCKET: z.string().optional(),
 
+  // Cloudinary (for audio/media storage)
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, "Cloudinary cloud name is required"),
+  CLOUDINARY_API_KEY: z.string().min(1, "Cloudinary API key is required"),
+  CLOUDINARY_API_SECRET: z.string().min(1, "Cloudinary API secret is required"),
+
+  // AssemblyAI (for speech-to-text transcription)
+  ASSEMBLYAI_API_KEY: z.string().min(1, "AssemblyAI API key is required"),
+
   // Monitoring (Optional)
   SENTRY_DSN: z.string().url().optional(),
 
