@@ -14,6 +14,8 @@ export const apiLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Trust proxy for Railway deployment
+  validate: { trustProxy: false },
 });
 
 // Stricter limiter for authentication endpoints
@@ -28,6 +30,8 @@ export const authLimiter = rateLimit({
     },
   },
   skipSuccessfulRequests: true,
+  // Trust proxy for Railway deployment
+  validate: { trustProxy: false },
 });
 
 // Feedback submission limiter
@@ -41,4 +45,6 @@ export const feedbackLimiter = rateLimit({
       message: "Too many feedback submissions, please try again later",
     },
   },
+  // Trust proxy for Railway deployment
+  validate: { trustProxy: false },
 });
