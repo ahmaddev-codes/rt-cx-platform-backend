@@ -3,6 +3,7 @@ import { prisma } from "../utils/prisma";
 import { logger } from "../utils/logger";
 import { FeedbackChannel } from "@prisma/client";
 import { sentimentQueue } from "../workers/index";
+import { audioService } from "../services/audio.service";
 
 // Demo organizations/banks
 const DEMO_BANKS = [
@@ -415,3 +416,59 @@ async function createDemoFeedback(
 
   return feedback;
 }
+
+/**
+ * Upload demo audio (Public endpoint - no auth required)
+ */
+export const uploadDemoAudio = async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({
+        success: false,
+        message: "No audio file provided",
+      });
+      return;
+    }
+
+    const customerName = req.body.customerName || "Anonymous Demo User";
+    const customerEmail = req.body.customerEmail || "";
+
+    // Upload to Cloudinary
+    const result = await audioService.processAudioUpload(
+      req.file,
+      undefined, // No userId for demo
+      {
+        organizationId: "wema-bank-demo",
+        demo: true,
+        customerName,
+        customerEmail,
+        uploadedAt: new Date().toISOString(),
+        source: "public-demo",
+      }
+    );
+
+    logger.info("Demo audio uploaded successfully", {
+      feedbackId: result.feedbackId,
+      customerName,
+    });
+
+    res.status(201).json({
+      success: true,
+      message:
+        "Demo audio uploaded successfully! Your feedback has been recorded.",
+      data: {
+        feedbackId: result.feedbackId,
+        audioUrl: result.audioUrl,
+        customerName,
+        note: "This is a demo submission. Transcription will be available in the full version.",
+      },
+    });
+  } catch (error) {
+    logger.error("Failed to upload demo audio", { error });
+    res.status(500).json({
+      success: false,
+      message: "Failed to upload demo audio",
+      error: error instanceof Error ? error.message : "Unknown error",
+    });
+  }
+};
